@@ -1,0 +1,18 @@
+--bs 4
+--dataset kitti
+--epochs 20
+--n_bins 256
+--norm linear
+--lr 3.5e-4
+--w_chamfer 0.1
+
+--data_path   content/drive/MyDrive/CS 7643/final_project/dataset_DL
+--gt_path     content/drive/MyDrive/CS 7643/final_project/dataset_DL
+--filenames_file       /content/drive/MyDrive/CS 7643/final_project/AdaBins/train_DL.txt
+--filenames_file_eval  /content/drive/MyDrive/CS 7643/final_project/AdaBins/val_DL.txt
+
+--input_height 416
+--input_width  544
+--min_depth 1e-3
+--max_depth 80
+--validate_every 500

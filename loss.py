@@ -44,3 +44,48 @@ class BinsChamferLoss(nn.Module):  # Bin centers regularizer used in AdaBins pap
 
         loss, _ = chamfer_distance(x=input_points, y=target_points, y_lengths=target_lengths)
         return loss
+
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class DepthEdgeCouplingLoss(nn.Module):
+    """
+    Depth-Edge Coupling Loss:
+    Penalizes depth gradients at non-edge pixels.
+    Inputs:
+        - depth: (B, 1, H, W) predicted depth map
+        - edge: (B, 1, H, W) predicted binary edge mask (0 or 1)
+    """
+
+    def __init__(self, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+
+        # Fixed 3x3 Sobel kernels for finite grads
+        sobel_x = torch.tensor([[1, 0, -1],
+                                [2, 0, -2],
+                                [1, 0, -1]], dtype=torch.float32) / 8.0
+        sobel_y = sobel_x.t()
+
+        self.register_buffer('kx', sobel_x.view(1, 1, 3, 3))
+        self.register_buffer('ky', sobel_y.view(1, 1, 3, 3))
+
+    def forward(self, depth: torch.Tensor, edge: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            depth: (B, 1, H, W) predicted depth map
+            edge: (B, 1, H, W) predicted binary edge map (0 or 1)
+        Returns:
+            scalar loss (torch.Tensor)
+        """
+        gx = F.conv2d(depth, self.kx, padding=1, padding_mode='reflect')
+        gy = F.conv2d(depth, self.ky, padding=1, padding_mode='reflect')
+        grad_mag = torch.sqrt(gx ** 2 + gy ** 2 + self.eps)
+
+        weight = (1.0 - edge)  # 1 at egde pixels
+
+
+        loss = (weight * grad_mag).mean()
+        return loss
